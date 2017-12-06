@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BLACKJACK</title>
+</head>
+<body>
+
+    <div id="dealerReadOut">
+    </div>
+    <div id="playerReadOut">
+    <form action="/hit" method="post">
+  <button type="submit" name="playerIndex" value="0">Hit</button>
+    </form>
+  <form action="/hold" method="post">
+  <button type="submit" name="playerIndex" value="0">Hold</button>
+    </form>
+ </div>
+    <div onload=""></div>
+<script>
+var game = JSON.parse({{dict.json | tojson | safe}});
+function CreatePlayerReadOut(player){
+    //create read out as unordered list
+    var playerReadOut = document.createElement("UL");
+    playerReadOut.setAttribute("id", player.ID);
+    playerReadOut.style = "list-style-type:none";
+    document.body.appendChild(playerReadOut);
+    //fill read out with name then cards
+    var name = document.createElement("LI");
+    var nameText = document.createTextNode(player.ID);
+    name.appendChild(nameText);
+    document.getElementById(player.ID).appendChild(name);
+    if (player.ID == "dealer" && game.isActive){
+        //dealer hidden value interface
+        var cardLi  = document.createElement("LI");
+        var decodedCard = DecodeCard(player.hand[0]);
+        cardLi.appendChild(document.createTextNode(decodedCard));
+        document.getElementById(player.ID).appendChild(cardLi);
+        var hidden  = document.createElement("LI");
+        hidden.appendChild(document.createTextNode("Not Revealed Yet"));
+        document.getElementById(player.ID).appendChild(hidden);
+    } else{
+    //None Hidden interface
+    for (card in player.hand){
+        var cardLI  = document.createElement("LI");
+        var decodedCard = DecodeCard(player.hand[card]);
+        cardLI.appendChild(document.createTextNode(decodedCard));
+        document.getElementById(player.ID).appendChild(cardLI);
+    }
+    var handValue = document.createElement("LI");
+    handValue.appendChild(document.createTextNode("Hand Value: " + player.handValue));
+    document.getElementById(player.ID).appendChild(handValue);
+    var points = document.createElement("LI");
+    points.appendChild(document.createTextNode("Points: " + player.points));
+    document.getElementById(player.ID).appendChild(points);
+    }
+};
+function FinishPlayersReadOuts(){
+    for (player in game.players){
+        //your first player, so dont double print you
+        if (game.players[player].ID != game.players[0].ID){
+            CreatePlayerReadOut(game.players[player]);
+            }
+        }
+};
+
+function DecodeCard(card){
+    function GetSuit(card){
+           //cards start at 2 so - 1 to start all suits at same point
+           card -= 1;
+           if (card / (13+1) < 1)
+            return "diomonds ";
+           if (card / (2*13+1) < 1)
+            return "hearts ";
+           if (card / (3*13+1) < 1)
+            return "spades ";
+           if (card / (4*13+1) < 1)
+            return "clubs ";
+            };
+    var suit = GetSuit(card);
+    var uniSuit = card % 13;
+    switch(uniSuit){
+    case 1:
+        uniSuit = "Ace";
+        break;
+    case 0:
+        uniSuit = "King";
+        break;
+    case 12:
+        uniSuit = "queen";
+        break;
+    case 11:
+        uniSuit = "jack";
+        break;
+    default:
+        uniSuit = uniSuit.toString();
+    }
+    return suit + uniSuit;
+};
+
+var dealerReadOut = document.getElementById("dealerReadOut");
+dealerReadOut.onload = CreatePlayerReadOut(game.dealer);
+var playerReadOut = document.getElementById("playerReadOut");
+playerReadOut.onload = CreatePlayerReadOut(game.players[0]);
+FinishPlayersReadOuts();
+</script>
+    {% if dict.gameOver %}
+        <form action="/restart" method="post">
+  <button type="submit" >Play Again?</button>
+            </form>
+{% endif %}
+</body>
+</html>
+
